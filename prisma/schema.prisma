@@ -1,0 +1,96 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model House {
+  id          String   @id @default(cuid())
+  name        String
+  address     String?
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  apartments Apartment[]
+}
+
+model Apartment {
+  id           String   @id @default(cuid())
+  houseId      String
+  apartmentNo  String
+  tenantName   String
+  livingArea   Float    // in m²
+  description  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  house         House            @relation(fields: [houseId], references: [id], onDelete: Cascade)
+  meterReadings MeterReading[]
+  advancePayments AdvancePayment[]
+  costAllocations CostAllocation[]
+}
+
+model MeterReading {
+  id        String   @id @default(cuid())
+  apartmentId String
+  costType  CostType
+  reading   Float
+  date      DateTime @default(now())
+  year      Int      // Abrechnungsjahr
+  createdAt DateTime @default(now())
+
+  apartment Apartment @relation(fields: [apartmentId], references: [id], onDelete: Cascade)
+}
+
+model TotalCost {
+  id        String   @id @default(cuid())
+  costType  CostType
+  amount    Float
+  year      Int      // Abrechnungsjahr
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  costAllocations CostAllocation[]
+}
+
+model AdvancePayment {
+  id          String   @id @default(cuid())
+  apartmentId String
+  amount      Float
+  year        Int      // Abrechnungsjahr
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  apartment Apartment @relation(fields: [apartmentId], references: [id], onDelete: Cascade)
+}
+
+model CostAllocation {
+  id          String   @id @default(cuid())
+  apartmentId String
+  totalCostId String
+  costShare   Float    // Kostenanteil
+  createdAt   DateTime @default(now())
+
+  apartment  Apartment  @relation(fields: [apartmentId], references: [id], onDelete: Cascade)
+  totalCost  TotalCost  @relation(fields: [totalCostId], references: [id], onDelete: Cascade)
+}
+
+enum CostType {
+  COLD_WATER
+  WARM_WATER
+  HEATING
+  WASHING_MACHINE
+  INSURANCE
+  TAX
+  CHIMNEY_SWEEPER
+}
